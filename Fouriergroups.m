@@ -15,7 +15,50 @@ writegaugeerrors::usage="calculates gauge errors and exports gaugeerrors as func
 generategroup::usage="provide list of generators described as elements of GL(integers,n), returns all elements of generated subgroup of GL(integers,n)"
 integratenumericallyoverpixel::usage="calculate fourier transform for a list of wavevectors over a grayscale image"
 symmetriesreplacementrule::usage="pattern/.symmetriesreplacementrule yields orthogonal transformations to be investigated for a given pattern"
+FFTcsvfilenames::usage="FFTcsvfilename[intervall,pixel] yields filename containing FFT-values for the frequencies in the center square of length 2*intervall+1, calculated using <pixel> pixel in each dimension"
+bilinearidx::usage="bilinearidx[array_,idx : vecpattern] indexes into array using floating point index idx by bilinearly interpolating between arrayva&lues around idx"
+readidcesfromdict::usage=""
+exportDataToCSV::usage="export to csv while prepending header"
+relativediff::usage=""
 Begin["`Private`"]
+readidcesfromdict[dict_String,idces:{vecpattern..}]:=readidcesfromdict[ToExpression[Import[dict]],idces]
+readidcesfromdict[dict_Association,idces:{vecpattern..}]:={dict,Select[idces,(!KeyExistsQ[dict,#]&)]}
+exportDataToCSV[fileName_, data_, header_String] := Module[
+  {tempFile, stream, csvContent},
+
+  (* Export the data without the header *)
+  Export[fileName, data, "CSV"];
+
+  (* Read the CSV content as plain text *)
+  csvContent = Import[fileName, "Text"];
+
+  (* Create a temporary file and write the header *)
+  tempFile = CreateTemporary[];
+  stream = OpenWrite[tempFile];
+  WriteLine[stream, header];
+
+  (* Write the original CSV content after the header *)
+  WriteString[stream, csvContent];
+
+  (* Close the stream *)
+  Close[stream];
+
+  (* Overwrite the original file with the updated content *)
+  CopyFile[tempFile, fileName, OverwriteTarget -> True];
+  DeleteFile[tempFile];
+]
+relativediff[x_?NumericQ,y_?NumericQ]:=(x-y)/Max[x,y]
+
+Nextint[x_] := Floor[x] + 1
+FFTcsvfilenames[intervall_Integer]:={StringJoin["intervall_",ToString[intervall],"real.csv"],StringJoin["intervall_",ToString[intervall],"imaginary.csv"]}
+bilinearidx[array_,idx : vecpattern] :=(*see \
+https://en.wikipedia.org/wiki/Bilinear_interpolation*)
+(
+	 {Nextint[idx[[1]]] - idx[[1]],idx[[1]] -Floor[idx[[1]]]} . (
+	{{array[[Floor[idx[[1]]], Floor[idx[[2]]]]],array[[Floor[idx[[1]]], Nextint[idx[[2]]]]]},
+{array[[Nextint[idx[[1]]], Floor[idx[[2]]]]],array[[Nextint[idx[[1]]], Nextint[idx[[2]]]]]}}.
+{Nextint[idx[[2]]] - idx[[2]], idx[[2]] - Floor[idx[[2]]]})
+	 )
 generategroup[generators:{{{__Integer} ..}...}]:=NestWhile[
 		(DeleteDuplicates[Join[#, Flatten[Outer[Dot, #, generators, 1], 1]]] &),
 		{IdentityMatrix[Length[generators[[1,1]]]]}

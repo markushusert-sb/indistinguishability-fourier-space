@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 import os
 #from pathlib import path
-import miscellaneous
 import copy
 import math
 from collections import defaultdict
-try:
-    import userhomog_settings as homog_settings
-except ImportError:
-    import homog_settings
 import argparse
 import pandas as pd
 from collections import defaultdict
@@ -26,12 +21,16 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Polygon
 from datetime import datetime
 import glob
-import logging_remote
+import logging
 cm = 1/2.54  # centimeters in inches
 ratio_edge_width=0.35/np.sqrt(np.pi)
-log=logging_remote.standart_logger(__name__)
-miscellaneous.set_log_level(log)
-miscellaneous.add_symbols_to_preamble(plt)
+log=logging.getLogger(__name__)
+log.setLevel(logging.INFO)
+console_handler = logging.StreamHandler()
+formatter = logging.Formatter('%(filename)s:%(lineno)04d - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+log.handlers=[console_handler]
+
 norm_phase = colors.Normalize(vmin=-np.pi, vmax=np.pi)
 zorder_scatter=3#either 2 or 3 to be below or above gridlines and labels
 colours = [(0, 1, 0), (1, 0, 0)] # first color is green, last is red
@@ -78,6 +77,21 @@ def parse_cmd_line():
     parser.add_argument('--plottype',help='fontsize for ticks',type=str,default='polar',choices=['polar','cartesian'])
     args = parser.parse_args()
     return args
+def plot_figure(fig,basepath,close=True,transparent=False):
+    log.info(f'exporting {basepath}')
+    fig.savefig(basepath+'.png',bbox_inches="tight",transparent=transparent)
+#    fig.savefig(basepath+'.pdf',bbox_inches="tight",transparent=transparent)
+    if os.environ.get('Cluster',0)!='1' and False:
+        for ax in fig.get_axes():
+            ax.set_title(ax.get_title().replace('_',r'\_'))
+            ax.set_xlabel(ax.get_xlabel().replace('_',r'\_'))
+            ax.set_ylabel(ax.get_ylabel().replace('_',r'\_'))
+            if ax.get_legend() is not None:
+                for text in ax.get_legend().get_texts():
+                    text.set_text(text.get_text().replace('_',r'\_'))
+    if close:
+        plt.close(fig)
+
 def read_gaugeerror_file(args,ge_file):
     data=np.genfromtxt(ge_file,delimiter=',')
     symmetryname=' '.join(ge_file.split('_')[3:])[:-4]
@@ -137,7 +151,7 @@ def plot_histogramm(basename,errors,symmetryname,symmetrysign,typ,nbins_approx,f
     if typ=="gaugeerrors":
         ax.set_xlabel(r'$\Delta\Phi_{'+symmetrysign+'}$',fontsize='x-large')
     elif typ=="amplitudeerrors":
-        ax.set_xlabel(r'$\Delta \abs{\hat{\rho}}$',fontsize='x-large')
+        ax.set_xlabel(r'$\Delta \left|\hat{\rho}\right|$',fontsize='x-large')
     elif typ=="combinederrors":
         ax.set_xlabel(r"$\Delta^{\mathrm{sym}}$",fontsize='x-large')
 
@@ -147,7 +161,7 @@ def plot_histogramm(basename,errors,symmetryname,symmetrysign,typ,nbins_approx,f
        ax.text(histogramvline, 0.95, f'threshold={histogramvline}', color='r', ha='right', va='top',rotation=90,
             transform=ax.get_xaxis_transform(),size='x-large')
     ax.set_title(f'Deviation measures of {len(errors)} analyzed frequencies')
-    miscellaneous.plot_figure(fig,basename,close=True)
+    plot_figure(fig,basename,close=True)
 
 def plot_gaugeerrors(ge_file,args,maxsize,number_bases,diffractiondata):
     symmetryname,basename,symmetrysign,wavevectors,gauges,gaugeerrors,amplitudes,amplitudeerrors=read_gaugeerror_file(args,ge_file)
@@ -160,21 +174,21 @@ def plot_gaugeerrors(ge_file,args,maxsize,number_bases,diffractiondata):
     if False:
         fig,ax=plt.subplots()
         ax.scatter(amplitudes,gaugeerrors)
-        ax.set_xlabel(r'$\abs{\hat{\rho}}(\ve{k})$')
+        ax.set_xlabel(r'$\left|{\hat{\rho}\right|(\ve{k})$')
         ax.set_xscale('log')
         ax.set_ylabel(r'$\Delta\Phi_{'+symmetrysign+r'}(\ve{k})$')
         #ax.set_title(f'Deviation of phase function for {symmetryname}')
         ax.axhline(y=0, color='gray', linestyle='--')
-        miscellaneous.plot_figure(fig,basename)
+        plot_figure(fig,basename)
         plt.close(fig)
 
         fig,ax=plt.subplots()
         ax.axhline(y=0, color='black', linestyle='--')
         ax.scatter(amplitudes,gaugeerrors)
-        ax.set_xlabel(r"$\frac{\abs{\abs{\hat{\rho}}(\ve{k})-\abs{\hat{\rho}}("+symmetrysign+r"\ve{k})}}{\max(\abs{\hat{\rho}}(\ve{k}),\abs{\hat{\rho}}("+symmetrysign+r"\ve{k}))}$")
+        ax.set_xlabel(r"$\frac{\left|{\left|\hat{\rho}\right|(\ve{k})-\left|{\hat{\rho}}\right|("+symmetrysign+r"\ve{k})}\right|}{\max(\left|{\hat{\rho}}\right|(\ve{k}),\left|{\hat{\rho}}\right|("+symmetrysign+r"\ve{k}))}$")
         ax.set_ylabel(r'$\Delta\Phi_{'+symmetrysign+r'}(\ve{k})$')
         #ax.set_title(f'Deviation of phase function  function for {symmetryname}')
-        miscellaneous.plot_figure(fig,basename+'amplitudeerrors')
+        plot_figure(fig,basename+'amplitudeerrors')
         plt.close(fig)
 def sizefun(maxamplitude,args,lim):
     scale_size=lambda s: 3000*args.scalesize*(args.figureheight*args.figurewidth*(s/maxamplitude)/lim**2)**0.7
@@ -217,7 +231,7 @@ def plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata):
     ax.grid(linewidth=0.3)
 
     scatter_other,scatter_base=plot_considered_vectors(args,wavevecbase,wavevecother,ax,[args.studywaveveccolor,args.studywaveveccolor],label1=None,label2=None)
-    miscellaneous.plot_figure(fig,f'fourier_module_{args.file.replace(".png","")}',close=False)
+    plot_figure(fig,f'fourier_module_{args.file.replace(".png","")}',close=False)
     #overlay with diffractiondata
     minamplitude=args.threshold
     maxamplitude=max(diffractiondata[:,2])
@@ -231,7 +245,7 @@ def plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata):
 
     leg=add_legend(args,diffractiondata[:,2],scale_size,ax,legendfacecolor='none')
 
-    leg2 = plt.legend([scatter_other],[r"$\studywavevecs$"],handletextpad=0,borderpad=0.15)
+    leg2 = plt.legend([scatter_other],[r"$\mathcal{F}$"],handletextpad=0,borderpad=0.15)
     #leg2 = plt.legend([scatter_other],[r"$\mathcal{L}$"],handletextpad=0,borderpad=0.15)
     ax.add_artist(leg)
     leg.set_loc('upper left')
@@ -240,7 +254,7 @@ def plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata):
     leg2.set_loc('upper right')
     leg2.set_bbox_to_anchor((1, 1))
 
-    miscellaneous.plot_figure(fig,f'overlay_considered_vectors_diffraction_{args.file.replace(".png","")}',transparent=False)
+    plot_figure(fig,f'overlay_considered_vectors_diffraction_{args.file.replace(".png","")}',transparent=False)
 def plot_cbar(sc,cmap,args,cax=None,ax=None,title=None,cbar_limits=[-np.pi, np.pi],pad=0): 
     cbar = plt.colorbar(cmap,ax=ax, cax=cax, orientation='vertical',pad=pad)
     if title is  not None:
@@ -268,7 +282,7 @@ def add_legend(args,amplitudes,scale_size,ax,legendtitle=r'\hat{\rho}',legendfac
     legend_scaled_sizes=scale_size(legend_sizes)
     for legend_size, legend_scaled_size in zip(legend_sizes, legend_scaled_sizes):
        ax.scatter([], [], s=legend_scaled_size, alpha=1.0, label=f'{legend_size:.2g}',facecolors=legendfacecolor, edgecolors='k',linewidths=0.15)
-    legend=ax.legend(title=r'$\abs{'+legendtitle+r'}$',handletextpad=args.handletextpad,bbox_to_anchor=(0,1),loc='upper center',fontsize=args.legendfontsize)
+    legend=ax.legend(title=r'$\left|{'+legendtitle+r'}\right|$',handletextpad=args.handletextpad,bbox_to_anchor=(0,1),loc='upper center',fontsize=args.legendfontsize)
     return legend
 
 def plot_gaugefunction_spatial(wavevecs,amplitudes,gauges,args,symmetryname,symmetrysign,basename,maxsize,number_bases,typ='gauges',diffractiondata=None):
@@ -295,7 +309,7 @@ def plot_gaugefunction_spatial(wavevecs,amplitudes,gauges,args,symmetryname,symm
     elif typ=="amplitudeerrors":
         cmap=cmap_amplitudeerrors
         cbar_limits=[0.0,1.0]
-        title=r"$\Delta \abs{\hat{\rho}}$"
+        title=r"$\Delta \left|{\hat{\rho}}\right|$"
     elif typ=="combinederrors":
         cmap=cmap_amplitudeerrors
         cbar_limits=[0.0,1.0]
@@ -332,7 +346,7 @@ def plot_gaugefunction_spatial(wavevecs,amplitudes,gauges,args,symmetryname,symm
     plot_cbar(sc,plt.cm.ScalarMappable(norm,cmap = cmap),args,cbar_limits=cbar_limits,cax=cax,ax=ax,title=title) 
     if args.plottype=='polar':
         fig.tight_layout()
-    miscellaneous.plot_figure(fig,os.path.join(dir,basename),close=True)
+    plot_figure(fig,os.path.join(dir,basename),close=True)
     plt.close(fig)
 def annotate_basevecs(args,ax,basevecs):
     for (ib,basevec) in enumerate(basevecs):
@@ -455,11 +469,11 @@ def plot_diffraction_image(datas,args,diffraction_name,maxsize,annotate_bases=Fa
 
         if colour==True:
             cax=get_cax(args,fig,ax)
-            plot_cbar(sc,plt.cm.ScalarMappable(colors.Normalize(-np.pi, np.pi),cmap = plt.cm.hsv),args,title=r'\scalebox{1}{$\phase{\hat{\rho}}$}',cax=cax)
+            plot_cbar(sc,plt.cm.ScalarMappable(colors.Normalize(-np.pi, np.pi),cmap = plt.cm.hsv),args,title=r'\scalebox{1}{$\mathrm{Arg}(\hat{\rho})$}',cax=cax)
             if args.plottype=='polar':
                 fig.tight_layout()
 
-        miscellaneous.plot_figure(fig,os.path.join(dir,basename),close=True)
+        plot_figure(fig,os.path.join(dir,basename),close=True)
         plt.close(fig)
 
 def plot_fft_heatmap(args,fft_heatmap):
@@ -470,11 +484,11 @@ def plot_fft_heatmap(args,fft_heatmap):
     im=ax.imshow(fft_heatmap,'plasma',extent=(-lim,lim,-lim,lim))
     cax=get_cax(args,fig,ax)
     cbar=fig.colorbar(im,orientation='vertical',ax=ax, cax=cax)
-    cbar.ax.set_title(r'\scalebox{0.6}{$\abs{\hat{\rho}}$}')
+    cbar.ax.set_title(r'\scalebox{0.6}{$\left|{\hat{\rho}}\right|$}')
     tick_positions=[round(i,2) for i in [0,maxval/2,maxval]]
     cbar.set_ticks(tick_positions)
     cbar.ax.tick_params(labelsize=12)
-    miscellaneous.plot_figure(fig,f"FFT_heatmap_{args.file}")
+    plot_figure(fig,f"FFT_heatmap_{args.file}")
 def main():
     args=parse_cmd_line()
     log.info(f'args={args}')

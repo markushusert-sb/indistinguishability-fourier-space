@@ -1,21 +1,6 @@
 #!/usr/bin/env wolframscript
 Clear["Global`*"]
-Needs["Patterns`"]
-Needs["Wpgroups`"]
 Needs["Fouriergroups`"]
-Needs["Settings`"]
-edgesoftiling[tiling:tilingpat]:=Module[{minmaxx,minmaxy},
-	minmaxx = MinMax[Flatten[tiling, 2][[All, 1]]];
-	minmaxy = MinMax[Flatten[tiling, 2][[All, 2]]];
-	Select[
-		Flatten[ Map[(Sort /@ Transpose[{#, RotateRight[#]}] &), tiling, {2}], 2], 
-  	Function[{edge}, 
-   		AnyTrue[edge,
-				(! MemberQ[minmaxx, #[[1]]] && !  MemberQ[minmaxy, #[[2]]] &)
-			]
-		]
-	]
-]
 
 (*read arguments*)
 argv = Echo[Rest @ $ScriptCommandLine,"argv"];
