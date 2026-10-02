@@ -2,10 +2,7 @@
 import argparse
 import numpy as np
 from PIL import Image
-import miscellaneous
 import logging_remote
-log=logging_remote.standart_logger(__name__)
-miscellaneous.set_log_level(log)
 
 def parse_cmd_line():
     parser = argparse.ArgumentParser(description='calculates numerically the fourier transform of a given array of wavectors for an image')
