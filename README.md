@@ -49,3 +49,4 @@ This code may be used in two different ways:
 * From a mathematica notebook, using directly the relevant functions of `Fouriergroups.m`.
 
 Both are examplified using a periodic and a quasiperiodic material in `exa/cmd_line/` and `exa/notebook/` respectively.
+The documentation of the inputs and outputs of the command line scripts can be found [here](doc/doc.md).
