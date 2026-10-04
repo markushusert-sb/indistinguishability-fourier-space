@@ -22,19 +22,20 @@ fouriercoefffile=Echo[StringReplace[file, ".png" -> StringJoin[{"fourier_coeffic
 image=Import[file];
 data=ImageData[image]
 Print["Dimensions=",Dimensions[data]];
-nrpixel=Dimensions[data]
+nrpixel=Dimensions[data](*rows than columns*)
 If[Length[Dimensions[data]]>2,Throw["used image is not grayscale"]]
 
 Print["Calculating FFT"];
 FFTcenter=(Conjugate[(*conjugate because we have negative exponent in fourier trafo, but mathematica a positive one*)
 Transpose[Reverse[(*reverse and transpose, since in the indixes, the first element is the rows (vertical downwards) and the second element is the cols (horizontal rightward), while for Listplot, it is the x coordinates (horizontal rightwards) and the y coordinates (vertical upwards)*)RotateLeft[
-Fourier[data], {-Floor[nrpixel[[2]]/2], -Floor[nrpixel[[1]]/2]}]]]]/Sqrt[Times @@ nrpixel])[[Floor[nrpixel[[1]]/2] + 1 - intervall ;; Floor[nrpixel[[1]]/2] + 1 + intervall, Floor[nrpixel[[2]]/2] + 1 - intervall ;; Floor[nrpixel[[2]]/2] + 1 + intervall]]
+Fourier[data], {-Floor[(nrpixel[[1]] - 1)/2], -Floor[nrpixel[[2]]/2]}]]]]/Sqrt[Times @@ nrpixel])[[Floor[nrpixel[[2]]/2] + 1 - intervall ;; Floor[nrpixel[[2]]/2] + 1 + intervall, Floor[nrpixel[[1]]/2] + 1 - intervall ;; Floor[nrpixel[[1]]/2] + 1 + intervall]]
 Clear[data]
 Clear[image]
 Export[StringJoin[{"FFT_heatmap_",StringReplace[file, ".png" -> ""],".csv"}],Abs[FFTcenter]]
 (*print diffraction image*)
 FFTfiltered=SparseArray[Map[(If[Abs[#]>diffractiondiagramthreshold,#,0]&),FFTcenter,{2}]];
 peakpositionaspixels=FFTfiltered["NonzeroPositions"];
+Print["nonzero",FFTfiltered["NonzeroPositions"]]
 Print["peakpositionaspixels=",(#-midpoint&)/@peakpositionaspixels];
 peakpositionaspixelsstretched=N[Transpose[{{Sqrt[Times@@nrpixel]/nrpixel[[1]],0},{0,Sqrt[Times@@nrpixel]/nrpixel[[2]]}}.Transpose[(#-midpoint&)/@peakpositionaspixels]]];(*apply a stretch to the wave vectors in case of a rectangular image, the so that the basis of the fourier space remains orthonormal*)
 peakintensities=(Abs[FFTfiltered[[#[[1]], #[[2]]]]] &) /@peakpositionaspixels;

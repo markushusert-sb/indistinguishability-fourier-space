@@ -79,7 +79,7 @@ def parse_cmd_line():
     return args
 def plot_figure(fig,basepath,close=True,transparent=False):
     log.info(f'exporting {basepath}')
-    fig.savefig(basepath+'.png',bbox_inches="tight",transparent=transparent)
+    fig.savefig(basepath+'.png',bbox_inches="tight",transparent=transparent,dpi=600)
 #    fig.savefig(basepath+'.pdf',bbox_inches="tight",transparent=transparent)
     if os.environ.get('Cluster',0)!='1' and False:
         for ax in fig.get_axes():
@@ -495,20 +495,18 @@ def main():
 
     diffractiondata=np.genfromtxt(f"diffractiondiagram_{args.file.replace('.png','')}.csv",delimiter=',')
     maxsize=max(diffractiondata[:,2])
+    plot_diffraction_image([[diffractiondata,{'facecolors':'none','edgecolors':plt.cm.hsv(norm_phase(diffractiondata[:,3])),'linewidths':0.2}]],args,"diffraction_threshold",maxsize,title=r'FFT-Values $\hat{\rho}^{c}$ with amplitudes above c='+str(args.threshold),legendtitle=r'\hat{\rho}',do_legend=("diffractionfft" not in args.nolegend),do_yticks=("diffractionfft" not in args.noyticks),legendfacecolor='none')
 
-    norm_phase = colors.Normalize(vmin=-np.pi, vmax=np.pi)
     wavevecbase=np.genfromtxt(f"wavevectors_base_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
     number_bases=wavevecbase.shape[0]
     wavevecother=np.genfromtxt(f"wavevectors_other_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
 
     plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata)
-
     plot_fourier_at_idces(args,"wavevectors",maxsize)
 
     #threshholded diffractiondata
     oldplot=args.plottype
     args.plottype='cartesian'
-    plot_diffraction_image([[diffractiondata,{'facecolors':'none','edgecolors':plt.cm.hsv(norm_phase(diffractiondata[:,3])),'linewidths':0.2}]],args,"diffraction_threshold",maxsize,title=r'FFT-Values $\hat{\rho}^{c}$ with amplitudes above c='+str(args.threshold),legendtitle=r'\hat{\rho}',do_legend=("diffractionfft" not in args.nolegend),do_yticks=("diffractionfft" not in args.noyticks),legendfacecolor='none')
     args.plottype=oldplot
 
     #gauges and associated errors
