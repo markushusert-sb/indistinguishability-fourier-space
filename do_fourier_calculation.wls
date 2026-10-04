@@ -76,8 +76,8 @@ idxtofourier=Merge[
 Export[fouriercoefffile,idxtofourier]
 baseidcesfourier=(idxtofourier[#]&)/@baseidces
 otheridcesfourier=(idxtofourier[#]&)/@otheridces
-exportDataToCSV[StringJoin["wavevectors_base_",StringReplace[file, ".png" -> ""],".csv"],Transpose[Join[Transpose[baseidcespos], {Abs/@baseidcesfourier,Arg/@baseidcesfourier}]],"#k_1,k_2,absolute value of peak,phase of peak"]
-exportDataToCSV[StringJoin["wavevectors_other_",StringReplace[file, ".png" -> ""],".csv"],Transpose[Join[Transpose[otheridcespos], {Abs/@otheridcesfourier,Arg/@otheridcesfourier}]],"#k_1k_2absolute value of peakphase of peak"]
+exportDataToCSV[StringJoin["fourier_coefficients_base_",StringReplace[file, ".png" -> ""],".csv"],Transpose[Join[Transpose[baseidcespos], {Abs/@baseidcesfourier,Arg/@baseidcesfourier}]],"#k_1,k_2,absolute value of peak,phase of peak"]
+exportDataToCSV[StringJoin["fourier_coefficients_other_",StringReplace[file, ".png" -> ""],".csv"],Transpose[Join[Transpose[otheridcespos], {Abs/@otheridcesfourier,Arg/@otheridcesfourier}]],"#k_1k_2absolute value of peakphase of peak"]
 
 (*calculate gauges*)
 ((Print["calculating gaugerrors of ",#[[1]]];writegaugeerrors[#,basevectors,baseidces,otheridces,idxtofourier,StringJoin["gaugeerrors_",StringReplace[file, ".png" -> ""],"_"]])&)/@symmetriestocheck

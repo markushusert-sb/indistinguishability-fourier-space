@@ -41,7 +41,7 @@ def execute_mathematica(program,args,dir):
 def parse_cmd_line():
     parser = argparse.ArgumentParser(description='plot fourier transform of given pattern')
     parser.add_argument('--file', type=str,help='file containing studied grayscale image')
-    parser.add_argument('--intervall',help='Domain of analysed frequencies, square region [-intervall,intervall]^2' ,type=int)
+    parser.add_argument('--interval',help='Domain of analysed frequencies, square region [-intervall,intervall]^2' ,type=int)
     parser.add_argument('--threshold',help='threshfold of amplitude of a peak in order to be shown in a diffraction diagramm' ,type=float,default=0.01)
     parser.add_argument('--thresholdgauge',help='threshfold of amplitude of a peak in order to be considered for gauge calculations' ,type=float,default=0.01)
     parser.add_argument('--multiples',help='multiples of lattice basis vectors up to which we verify gauge linearity' ,type=int,default=4)
@@ -52,6 +52,6 @@ def main():
     args=parse_cmd_line()
 
     program=os.path.join(os.path.dirname(os.path.realpath(__file__)),'do_fourier_calculation.wls')
-    execute_mathematica(program,[args.file,str(args.intervall),str(args.threshold),str(args.multiples),str(args.thresholdgauge)]+args.symmetries,'.')
+    execute_mathematica(program,[args.file,str(args.interval),str(args.threshold),str(args.multiples),str(args.thresholdgauge)]+args.symmetries,'.')
 if __name__=="__main__":
     main()

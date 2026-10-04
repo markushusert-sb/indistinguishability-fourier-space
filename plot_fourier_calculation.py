@@ -10,13 +10,16 @@ from collections import defaultdict
 from itertools import combinations
 import numpy as np
 import subprocess
+import matplotlib
+# Use the pgf backend (must be set before pyplot imported)
+matplotlib.use('pgf')
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
 from matplotlib.ticker import AutoLocator
 from matplotlib.collections import PathCollection
-import matplotlib
+
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Polygon
 from datetime import datetime
@@ -196,8 +199,8 @@ def sizefun(maxamplitude,args,lim):
     return scale_size
 
 def plot_fourier_at_idces(args,basename,maxamplitude):
-    diffractiondatabase=np.genfromtxt(basename+f"_base_{args.file.replace('.png','')}.csv",delimiter=',')
-    diffractiondataother=np.genfromtxt(basename+f"_other_{args.file.replace('.png','')}.csv",delimiter=',')
+    diffractiondatabase=np.genfromtxt(f"fourier_coefficients_base_{args.file.replace('.png','')}.csv",delimiter=',')
+    diffractiondataother=np.genfromtxt(f"fourier_coefficients_other_{args.file.replace('.png','')}.csv",delimiter=',')
     lim=lim_of_diff_plot(args,np.vstack((diffractiondatabase[:,:2],diffractiondataother[:,:2])))
     scale_size=sizefun(maxamplitude,args,lim)
     settings_basevectors= {'facecolors':plt.cm.hsv(norm_phase(diffractiondatabase[:,3])),'edgecolors':'black','linewidths':np.sqrt(scale_size(diffractiondatabase[:,2]))*ratio_edge_width} if args.annotatediffraction else {'facecolors':plt.cm.hsv(norm_phase(diffractiondatabase[:,3])),'linewidths':0}
@@ -245,7 +248,7 @@ def plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata):
 
     leg=add_legend(args,diffractiondata[:,2],scale_size,ax,legendfacecolor='none')
 
-    leg2 = plt.legend([scatter_other],[r"$\mathcal{F}$"],handletextpad=0,borderpad=0.15)
+    leg2 = plt.legend([scatter_other],[r"$\mathcal{M}$"],handletextpad=0,borderpad=0.15)
     #leg2 = plt.legend([scatter_other],[r"$\mathcal{L}$"],handletextpad=0,borderpad=0.15)
     ax.add_artist(leg)
     leg.set_loc('upper left')
@@ -262,7 +265,7 @@ def plot_cbar(sc,cmap,args,cax=None,ax=None,title=None,cbar_limits=[-np.pi, np.p
         cbar.ax.set_title(title)
     if cbar_limits[0] == -np.pi and cbar_limits[1] == np.pi:
         cbar.set_ticks([-np.pi, -np.pi/2, 0, np.pi/2, np.pi])
-        cbar.set_ticklabels([r'\scalebox{0.6}{$-\pi$}', r'\scalebox{0.6}{{$-\frac{\pi}{2}$}}', r'\scalebox{0.6}{0}', r'\scalebox{0.6}{$\frac{\pi}{2}$}', r'\scalebox{0.6}{$\pi$}'],fontsize=args.fontsizeticks*1.3)
+        cbar.set_ticklabels([r'\scalebox{0.6}{$-\pi$}', r'\scalebox{0.6}{$-\frac{\pi}{2}$}', r'\scalebox{0.6}{0}', r'\scalebox{0.6}{$\frac{\pi}{2}$}', r'\scalebox{0.6}{$\pi$}'],fontsize=args.fontsizeticks*1.3)
     else:
         tick_positions = [round(i,1) for i in cbar.get_ticks()]
         cbar.set_ticks(tick_positions)
@@ -316,7 +319,7 @@ def plot_gaugefunction_spatial(wavevecs,amplitudes,gauges,args,symmetryname,symm
         title=r"$\Delta^{\mathrm{sym}}$"
 
     for rad in args.circles:
-        circle = plt.Circle((0, 0), rad, color='gray', fill=False, linewidth=1)
+        circle = plt.Circle((0, 0), rad, color='gray', fill=False, linewidth=1,transform=ax.transData._b)
         ax.add_artist(circle)
 
     norm = plt.Normalize(*tuple(cbar_limits))
@@ -443,7 +446,7 @@ def plot_diffraction_image(datas,args,diffraction_name,maxsize,annotate_bases=Fa
         basename=diffraction_name+'_'+args.file.replace('.png','')+f'{"amplitudes" if colour==False else ""}'
         fig,ax=figax_for_diffraction(args,lim,doylabel=do_yticks)
         for rad in circle_radii:
-            circle = plt.Circle((0, 0), rad, color='gray', fill=False, linewidth=1)
+            circle = plt.Circle((0, 0), rad, color='gray', fill=False, linewidth=1,transform=ax.transData._b)
             ax.add_artist(circle)
 
         #ax.set_title(title,fontsize=args.titlesize)
@@ -488,7 +491,7 @@ def plot_fft_heatmap(args,fft_heatmap):
     tick_positions=[round(i,2) for i in [0,maxval/2,maxval]]
     cbar.set_ticks(tick_positions)
     cbar.ax.tick_params(labelsize=12)
-    plot_figure(fig,f"FFT_heatmap_{args.file}")
+    plot_figure(fig,f"FFT_heatmap_{args.file.replace('.png','')}")
 def main():
     args=parse_cmd_line()
     log.info(f'args={args}')
@@ -497,9 +500,9 @@ def main():
     maxsize=max(diffractiondata[:,2])
     plot_diffraction_image([[diffractiondata,{'facecolors':'none','edgecolors':plt.cm.hsv(norm_phase(diffractiondata[:,3])),'linewidths':0.2}]],args,"diffraction_threshold",maxsize,title=r'FFT-Values $\hat{\rho}^{c}$ with amplitudes above c='+str(args.threshold),legendtitle=r'\hat{\rho}',do_legend=("diffractionfft" not in args.nolegend),do_yticks=("diffractionfft" not in args.noyticks),legendfacecolor='none')
 
-    wavevecbase=np.genfromtxt(f"wavevectors_base_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
+    wavevecbase=np.genfromtxt(f"fourier_coefficients_base_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
     number_bases=wavevecbase.shape[0]
-    wavevecother=np.genfromtxt(f"wavevectors_other_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
+    wavevecother=np.genfromtxt(f"fourier_coefficients_other_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
 
     plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata)
     plot_fourier_at_idces(args,"wavevectors",maxsize)

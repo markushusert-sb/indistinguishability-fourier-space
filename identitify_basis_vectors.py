@@ -125,6 +125,7 @@ def main():
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_title('Local maximum around estimated basis vector')
+    ax.grid(True, linestyle="--", linewidth=0.5)
     ax.legend()
 
     # Export PNG
