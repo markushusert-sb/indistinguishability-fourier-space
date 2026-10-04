@@ -13,7 +13,8 @@ The intened way to use these tools is the following:
 * `--multiples` All considered spatial frequencies lie on the orbit under the holohedry of the set of all linear combinations of `multiples` basis vectors
 * `--symmetries` One or more .csv files, linear isometries whose compatibility with the symmetry criterion is evaluated
 ### Input files
-* `file` Grayscale .png image file to evaluate
-* ``
+* `file`: Grayscale .png image file to evaluate
+* `basevectors.csv:` A .csv file with with two columns corresponding to x and y directions and $\mu$ rows corresponding to the $\mu$ different basis vectors
+* .csv files indicated under `symmetries`: Transformations whose symmetric pro
 ### Ouput files
 ## plot_fourier_pattern.py

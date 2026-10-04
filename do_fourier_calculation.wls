@@ -12,8 +12,7 @@ multiples=Echo[ToExpression[argv[[4]]],"multiples"]
 gaugethreshold=Echo[ToExpression[argv[[5]]],"gaugethreshold="]
 symmetriesfiles=Echo[argv[[6;;]],"symmetriesfiles="]
 symmetriestocheck=({StringReplace[#, ".csv" -> ""],Import[#]}&)/@symmetriesfiles
-basevectorsfile="basevectors.csv"
-holohedrygeneratorsfiles={"generator_holohedry_1.csv","generator_holohedry_2.csv"}
+basevectorsfile="basisvectors.csv"
 
 scriptDirectory = DirectoryName[ExpandFileName[First[$ScriptCommandLine]]];
 fftfiles=Echo[(StringJoin[{StringReplace[file, ".png" -> ""],#}]&)/@FFTcsvfilenames[intervall],"fftfiles"]
@@ -45,7 +44,7 @@ exportDataToCSV[StringJoin[{"diffractiondiagram_",StringReplace[file, ".png" -> 
 (*Determine indices for which to verify gauge*)
 (*Do not modify existing sets of basevectors, just add a new counter*)
 basevectors=Import[basevectorsfile];
-holohedry=generategroup[Import/@holohedrygeneratorsfiles]
+holohedry=generategroup[Import/@symmetriesfiles]
 Print["Number of elements in holohedry=",Length[holohedry]]
 idcestotestorbit=(DeleteDuplicates[Function[{trafo}, trafo . #] /@ holohedry] &) /@ 
  Select[
