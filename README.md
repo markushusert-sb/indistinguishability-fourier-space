@@ -21,7 +21,7 @@ In real space, the criterion of indistinguishability between two functions $\rho
 C_{n}(\mathbf{x}_1,..,\mathbf{x}_{n-1})=\lim_{\Omega \to \infty} \frac{1}{\left|{\Omega}\right|} \int_{\Omega}\rho(\mathbf{x}_1)\rho(\mathbf{x}_1+\mathbf{x})..\rho(\mathbf{x}_{n-1}+\mathbf{x}) \mathrm{d} \mathbf{x}
 ```
 for any $n \in \mathbb{N}$.\
-However, this program operates on the Fourier coefficients $\hat{\rho}'(\mathbf{k})$, where the criterion takes the equivalent form
+However, this program operates on the Fourier coefficients $\hat{\rho}(\mathbf{k})$, where the criterion takes the equivalent form
 ```math
 \hat{\rho}'(\mathbf{k})=\mathrm{e}^{2\pi\mathrm{i}\chi(\mathbf{k})}\hat{\rho}(\mathbf{k})
 ```

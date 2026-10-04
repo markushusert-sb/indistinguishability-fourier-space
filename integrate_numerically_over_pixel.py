@@ -16,7 +16,9 @@ def integrate_wavevectors(grayscale_values,wavevectors):
     i, j = np.meshgrid(np.arange(imagesize[0]), np.arange(imagesize[1]), indexing='ij')#j numbers columns and i numbers rows
 
     for ivec,wavevec in enumerate(wavevectors):
-        exponent = -2j * np.pi * (((j-(imagesize[1]/2-0.5)) / np.sqrt(np.prod(imagesize))) * wavevec[0] - ((i-(imagesize[0]/2-0.5)) / np.sqrt(np.prod(imagesize))) * wavevec[1])#normalisation with np.sqrt(np.prod(imagesize)) allows to treat rectangular images while maintaining a coherence with the fft, i has negative sign because rows are numbered downwards, we subtract half of the imagesize so that (i,j)=(0,0) lies in the center of the image and not the corner
+        exponent = -2j * np.pi * (((j-(imagesize[1]/2-0.5)) / np.sqrt(np.prod(imagesize))) * wavevec[0] - ((i-(imagesize[0]/2-0.5)) / np.sqrt(np.prod(imagesize))) * wavevec[1])
+        #-(imagesize[1]/2-0.5) in order to put the origin in the center of the image
+        #normalisation with np.sqrt(np.prod(imagesize)) allows to treat rectangular images while maintaining a coherence with the fft, i has negative sign because rows are numbered downwards, we subtract half of the imagesize so that (i,j)=(0,0) lies in the center of the image and not the corner
         result = np.sum(grayscale_values * np.exp(exponent))/np.prod(imagesize)
         data[ivec,2]=np.abs(result)
         data[ivec,3]=np.angle(result)

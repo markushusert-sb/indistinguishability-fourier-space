@@ -1,7 +1,6 @@
 #!/usr/bin/env wolframscript
 Clear["Global`*"]
 Needs["Fouriergroups`"]
-
 (*read arguments*)
 argv = Echo[Rest @ $ScriptCommandLine,"argv"];
 file=Echo[argv[[1]],"file="]
@@ -18,7 +17,7 @@ holohedrygeneratorsfiles={"generator_holohedry_1.csv","generator_holohedry_2.csv
 
 scriptDirectory = DirectoryName[ExpandFileName[First[$ScriptCommandLine]]];
 fftfiles=Echo[(StringJoin[{StringReplace[file, ".png" -> ""],#}]&)/@FFTcsvfilenames[intervall],"fftfiles"]
-fouriercoefffile=Echo[StringReplace[file, ".png" -> StringJoin[{"fourier_coefficients_",".txt"}]],"fourier coefficients by pixel integration"];
+fouriercoefffile=Echo[StringReplace[file, ".png" -> StringJoin[{"fourier_coefficients_",".txt"}]],"fourier coefficients integration"];
 
 image=Import[file];
 data=ImageData[image]
@@ -37,7 +36,7 @@ Export[StringJoin[{"FFT_heatmap_",StringReplace[file, ".png" -> ""],".csv"}],Abs
 FFTfiltered=SparseArray[Map[(If[Abs[#]>diffractiondiagramthreshold,#,0]&),FFTcenter,{2}]];
 peakpositionaspixels=FFTfiltered["NonzeroPositions"];
 Print["peakpositionaspixels=",(#-midpoint&)/@peakpositionaspixels];
-peakpositionaspixelsstretched=N[Transpose[{{Sqrt[Times@@nrpixel]/nrpixel[[1]],0},{0,Sqrt[Times@@nrpixel]/nrpixel[[2]]}}.Transpose[(#-midpoint&)/@peakpositionaspixels]]];
+peakpositionaspixelsstretched=N[Transpose[{{Sqrt[Times@@nrpixel]/nrpixel[[1]],0},{0,Sqrt[Times@@nrpixel]/nrpixel[[2]]}}.Transpose[(#-midpoint&)/@peakpositionaspixels]]];(*apply a stretch to the wave vectors in case of a rectangular image, the so that the basis of the fourier space remains orthonormal*)
 peakintensities=(Abs[FFTfiltered[[#[[1]], #[[2]]]]] &) /@peakpositionaspixels;
 peakphases=(Arg[FFTfiltered[[#[[1]], #[[2]]]]] &) /@peakpositionaspixels;
 exportDataToCSV[StringJoin[{"diffractiondiagram_",StringReplace[file, ".png" -> ""],".csv"}],Transpose[Join[Transpose[peakpositionaspixelsstretched], {peakintensities,peakphases}]],"#k_1,k_2,absolute value of peak,phase of peak"]
@@ -64,7 +63,7 @@ otheridcespos=otheridces.basevectors
 
 (*calculate exact fourier transform of pixel image*)
 Print["Calculating gauges by Fourier transformation of pixels"]
-If[FileExistsQ[Echo[fouriercoefffile,"fouriercoefffile"]],
+If[FileExistsQ[fouriercoefffile]&& FileDate[fouriercoefffile] >(*basis vectors file has not been modified*) FileDate[basevectorsfile],
 {idxtofourier,idceslefttocalc}=readidcesfromdict[fouriercoefffile,idcestocalc],
 (idxtofourier=<||>;idceslefttocalc=idcestocalc)
 ]

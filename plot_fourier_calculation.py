@@ -501,10 +501,9 @@ def main():
     number_bases=wavevecbase.shape[0]
     wavevecother=np.genfromtxt(f"wavevectors_other_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
 
-    #plot_fourier_at_idces(args,"diffractiondiagram_exact",maxsize)
-    plot_fourier_at_idces(args,"wavevectors",maxsize)
-
     plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata)
+
+    plot_fourier_at_idces(args,"wavevectors",maxsize)
 
     #threshholded diffractiondata
     oldplot=args.plottype
