@@ -13,11 +13,11 @@ gaugethreshold=Echo[ToExpression[argv[[5]]],"gaugethreshold="]
 symmetriesfiles=Echo[argv[[6;;]],"symmetriesfiles="]
 symmetriestocheck=({StringReplace[#, ".csv" -> ""],Import[#]}&)/@symmetriesfiles
 basisvectorsfile="basisvectors.csv"
-
 scriptDirectory = DirectoryName[ExpandFileName[First[$ScriptCommandLine]]];
 fftfiles=Echo[(StringJoin[{StringReplace[file, ".png" -> ""],#}]&)/@FFTcsvfilenames[interval],"fftfiles"]
 fouriercoefffile=Echo[StringReplace[file, ".png" -> StringJoin[{"fourier_coefficients_",".txt"}]],"fourier coefficients integration"];
 
+Print["Reading image"];
 image=Import[file];
 data=ImageData[image]
 Print["Dimensions=",Dimensions[data]];
@@ -32,24 +32,23 @@ Clear[image]
 
 If[!FileExistsQ[basisvectorsfile],Throw["No basis vectors specified, calculation cannot proceed"]]
 
+Print["Determining set of studied frequencies"];
 basisvectors=Import[basisvectorsfile];
 holohedry=generategroup[Import/@symmetriesfiles]
 Print["Number of elements in holohedry=",Length[holohedry]]
 idcestocalc=getidcestocalculate[FFTcenter,nrpixel,gaugethreshold,holohedry,multiples,basisvectors]
-
 Export[StringJoin[{"Indices_",StringReplace[file, ".png" -> ""],".csv"}],Transpose[Join[Sequence @@ Transpose/@{idcestocalc,idcestocalc.basisvectors}]]]
 baseidces=IdentityMatrix[Length[basisvectors]]
 otheridces=Complement[idcestocalc,baseidces]
 baseidcespos=baseidces.basisvectors
 otheridcespos=otheridces.basisvectors
 
-(*calculate exact fourier transform of pixel image*)
-Print["Calculating gauges by Fourier transformation of pixels"]
+Print["calculating fourier transform for studied frequencies"]
 If[FileExistsQ[fouriercoefffile]&& FileDate[fouriercoefffile] >(*basis vectors file has not been modified*) FileDate[basisvectorsfile],
 {idxtofourier,idceslefttocalc}=readidcesfromdict[fouriercoefffile,idcestocalc],
 (idxtofourier=<||>;idceslefttocalc=idcestocalc)
 ]
-Print["calculating fourier transform for ",Length[idceslefttocalc]," idces"]
+Print["Numerical evaluation required for ",Length[idceslefttocalc]," vectors"]
 pixelintegrationresult=Echo[If[Length[idceslefttocalc]>0,integratenumericallyoverpixel[file,idceslefttocalc.basisvectors],{}],"pixelintres"]
 fouriercoeffs=MapThread[(#1*Exp[I*#2]&),{pixelintegrationresult[[All,3]],pixelintegrationresult[[All,4]]}]
 idxtofourier=Merge[
@@ -61,6 +60,6 @@ otheridcesfourier=(idxtofourier[#]&)/@otheridces
 exportDataToCSV[StringJoin["fourier_coefficients_base_",StringReplace[file, ".png" -> ""],".csv"],Transpose[Join[Transpose[baseidcespos], {Abs/@baseidcesfourier,Arg/@baseidcesfourier}]],"#k_1,k_2,absolute value of peak,phase of peak"]
 exportDataToCSV[StringJoin["fourier_coefficients_other_",StringReplace[file, ".png" -> ""],".csv"],Transpose[Join[Transpose[otheridcespos], {Abs/@otheridcesfourier,Arg/@otheridcesfourier}]],"#k_1k_2absolute value of peakphase of peak"]
 
-(*calculate gauges*)
+Print["calculating deviation from symmetry criterion"]
 ((Print["calculating gaugerrors of ",#[[1]]];writegaugeerrors[#,basisvectors,baseidces,otheridces,idxtofourier,StringJoin["gaugeerrors_",StringReplace[file, ".png" -> ""],"_"]])&)/@symmetriestocheck
 
