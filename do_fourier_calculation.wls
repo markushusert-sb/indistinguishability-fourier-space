@@ -5,17 +5,17 @@ Needs["Fouriergroups`"]
 argv = Echo[Rest @ $ScriptCommandLine,"argv"];
 file=Echo[argv[[1]],"file="]
 regiontoplot=type/.{"1"->2,"2"->1};(*we are plotting (in black) the polygons whose fourier trafo we do NOT want to take*)
-intervall=Echo[ToExpression[argv[[2]]],"intervall="]
-midpoint = {intervall + 1, intervall + 1};
+interval=Echo[ToExpression[argv[[2]]],"interval="]
+midpoint = {interval + 1, interval + 1};
 diffractiondiagramthreshold=Echo[ToExpression[argv[[3]]],"threshold="]
 multiples=Echo[ToExpression[argv[[4]]],"multiples"]
 gaugethreshold=Echo[ToExpression[argv[[5]]],"gaugethreshold="]
 symmetriesfiles=Echo[argv[[6;;]],"symmetriesfiles="]
 symmetriestocheck=({StringReplace[#, ".csv" -> ""],Import[#]}&)/@symmetriesfiles
-basevectorsfile="basisvectors.csv"
+basisvectorsfile="basisvectors.csv"
 
 scriptDirectory = DirectoryName[ExpandFileName[First[$ScriptCommandLine]]];
-fftfiles=Echo[(StringJoin[{StringReplace[file, ".png" -> ""],#}]&)/@FFTcsvfilenames[intervall],"fftfiles"]
+fftfiles=Echo[(StringJoin[{StringReplace[file, ".png" -> ""],#}]&)/@FFTcsvfilenames[interval],"fftfiles"]
 fouriercoefffile=Echo[StringReplace[file, ".png" -> StringJoin[{"fourier_coefficients_",".txt"}]],"fourier coefficients integration"];
 
 image=Import[file];
@@ -25,50 +25,32 @@ nrpixel=Dimensions[data](*rows than columns*)
 If[Length[Dimensions[data]]>2,Throw["used image is not grayscale"]]
 
 Print["Calculating FFT"];
-FFTcenter=(Conjugate[(*conjugate because we have negative exponent in fourier trafo, but mathematica a positive one*)
-Transpose[Reverse[(*reverse and transpose, since in the indixes, the first element is the rows (vertical downwards) and the second element is the cols (horizontal rightward), while for Listplot, it is the x coordinates (horizontal rightwards) and the y coordinates (vertical upwards)*)RotateLeft[
-Fourier[data], {-Floor[(nrpixel[[1]] - 1)/2], -Floor[nrpixel[[2]]/2]}]]]]/Sqrt[Times @@ nrpixel])[[Floor[nrpixel[[2]]/2] + 1 - intervall ;; Floor[nrpixel[[2]]/2] + 1 + intervall, Floor[nrpixel[[1]]/2] + 1 - intervall ;; Floor[nrpixel[[1]]/2] + 1 + intervall]]
+{FFTcenter,positions,intensities,phases}=calcfft[data,interval,diffractiondiagramthreshold];
+exportDataToCSV[StringJoin[{"diffractiondiagram_",StringReplace[file, ".png" -> ""],".csv"}],Transpose[Join[Transpose[positions], {intensities,phases}]],"#k_1,k_2,absolute value of peak,phase of peak"]
 Clear[data]
 Clear[image]
-Export[StringJoin[{"FFT_heatmap_",StringReplace[file, ".png" -> ""],".csv"}],Abs[FFTcenter]]
-(*print diffraction image*)
-FFTfiltered=SparseArray[Map[(If[Abs[#]>diffractiondiagramthreshold,#,0]&),FFTcenter,{2}]];
-peakpositionaspixels=FFTfiltered["NonzeroPositions"];
-Print["nonzero",FFTfiltered["NonzeroPositions"]]
-Print["peakpositionaspixels=",(#-midpoint&)/@peakpositionaspixels];
-peakpositionaspixelsstretched=N[Transpose[{{Sqrt[Times@@nrpixel]/nrpixel[[1]],0},{0,Sqrt[Times@@nrpixel]/nrpixel[[2]]}}.Transpose[(#-midpoint&)/@peakpositionaspixels]]];(*apply a stretch to the wave vectors in case of a rectangular image, the so that the basis of the fourier space remains orthonormal*)
-peakintensities=(Abs[FFTfiltered[[#[[1]], #[[2]]]]] &) /@peakpositionaspixels;
-peakphases=(Arg[FFTfiltered[[#[[1]], #[[2]]]]] &) /@peakpositionaspixels;
-exportDataToCSV[StringJoin[{"diffractiondiagram_",StringReplace[file, ".png" -> ""],".csv"}],Transpose[Join[Transpose[peakpositionaspixelsstretched], {peakintensities,peakphases}]],"#k_1,k_2,absolute value of peak,phase of peak"]
 
-(*Determine indices for which to verify gauge*)
-(*Do not modify existing sets of basevectors, just add a new counter*)
-basevectors=Import[basevectorsfile];
+If[!FileExistsQ[basisvectorsfile],Throw["No basis vectors specified, calculation cannot proceed"]]
+
+basisvectors=Import[basisvectorsfile];
 holohedry=generategroup[Import/@symmetriesfiles]
 Print["Number of elements in holohedry=",Length[holohedry]]
-idcestotestorbit=(DeleteDuplicates[Function[{trafo}, trafo . #] /@ holohedry] &) /@ 
- Select[
-	Tuples[Range[-multiples, multiples], Length[basevectors]],
-	(0<Total[Abs[#]] <= multiples &)]
-idcestotest=Flatten[Select[idcestotestorbit,(AllTrue[#,Function[{idx},Norm[#.basevectors]<intervall]]&)],1] (*remove long range frequencies beyond intervall*)
-idxtoabsfourierfft=AssociationThread[idcestotest,(bilinearidx[Abs[FFTcenter], midpoint + ({{Sqrt[Times@@nrpixel]/nrpixel[[2]],0},{0,Sqrt[Times@@nrpixel]/nrpixel[[1]]}}.(#.basevectors))]&)/@idcestotest](*estimate amplitude of fourier coefficient using FFT*)
-idcestotestexisting=Select[idcestotest,(idxtoabsfourierfft[#]>gaugethreshold&)](*only those with non-negligeble amplitude*)
-idcestocalc=Echo[DeleteDuplicates[Flatten[(Function[{trafo}, trafo . #] /@ holohedry &) /@idcestotestexisting,1]],"idces where fourier transform is needed"](*orbit of all existing frequencies*)
+idcestocalc=getidcestocalculate[FFTcenter,nrpixel,gaugethreshold,holohedry,multiples,basisvectors]
 
-Export[StringJoin[{"Indices_",StringReplace[file, ".png" -> ""],".csv"}],Transpose[Join[Sequence @@ Transpose/@{idcestocalc,idcestocalc.basevectors}]]]
-baseidces=IdentityMatrix[Length[basevectors]]
+Export[StringJoin[{"Indices_",StringReplace[file, ".png" -> ""],".csv"}],Transpose[Join[Sequence @@ Transpose/@{idcestocalc,idcestocalc.basisvectors}]]]
+baseidces=IdentityMatrix[Length[basisvectors]]
 otheridces=Complement[idcestocalc,baseidces]
-baseidcespos=baseidces.basevectors
-otheridcespos=otheridces.basevectors
+baseidcespos=baseidces.basisvectors
+otheridcespos=otheridces.basisvectors
 
 (*calculate exact fourier transform of pixel image*)
 Print["Calculating gauges by Fourier transformation of pixels"]
-If[FileExistsQ[fouriercoefffile]&& FileDate[fouriercoefffile] >(*basis vectors file has not been modified*) FileDate[basevectorsfile],
+If[FileExistsQ[fouriercoefffile]&& FileDate[fouriercoefffile] >(*basis vectors file has not been modified*) FileDate[basisvectorsfile],
 {idxtofourier,idceslefttocalc}=readidcesfromdict[fouriercoefffile,idcestocalc],
 (idxtofourier=<||>;idceslefttocalc=idcestocalc)
 ]
 Print["calculating fourier transform for ",Length[idceslefttocalc]," idces"]
-pixelintegrationresult=Echo[If[Length[idceslefttocalc]>0,integratenumericallyoverpixel[file,idceslefttocalc.basevectors],{}],"pixelintres"]
+pixelintegrationresult=Echo[If[Length[idceslefttocalc]>0,integratenumericallyoverpixel[file,idceslefttocalc.basisvectors],{}],"pixelintres"]
 fouriercoeffs=MapThread[(#1*Exp[I*#2]&),{pixelintegrationresult[[All,3]],pixelintegrationresult[[All,4]]}]
 idxtofourier=Merge[
 	{idxtofourier, AssociationThread[idceslefttocalc,fouriercoeffs]},
@@ -80,5 +62,5 @@ exportDataToCSV[StringJoin["fourier_coefficients_base_",StringReplace[file, ".pn
 exportDataToCSV[StringJoin["fourier_coefficients_other_",StringReplace[file, ".png" -> ""],".csv"],Transpose[Join[Transpose[otheridcespos], {Abs/@otheridcesfourier,Arg/@otheridcesfourier}]],"#k_1k_2absolute value of peakphase of peak"]
 
 (*calculate gauges*)
-((Print["calculating gaugerrors of ",#[[1]]];writegaugeerrors[#,basevectors,baseidces,otheridces,idxtofourier,StringJoin["gaugeerrors_",StringReplace[file, ".png" -> ""],"_"]])&)/@symmetriestocheck
+((Print["calculating gaugerrors of ",#[[1]]];writegaugeerrors[#,basisvectors,baseidces,otheridces,idxtofourier,StringJoin["gaugeerrors_",StringReplace[file, ".png" -> ""],"_"]])&)/@symmetriestocheck
 

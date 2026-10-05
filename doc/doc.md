@@ -25,7 +25,6 @@ In the following, `<filename>` corresponds to the name of the investigated image
 * `diffractiondiagram_<filename>.csv` A .csv file where: with four columns describing 
 	* Each row describes the coefficient $\hat{\rho}(\mathbf{k})$ of the discrete Fourier transform of the image with amplitude is above `threshold`.
 	* The four columns correspond to: the horizontal component $k_x$, the vertical component $k_y$, the amplitude $\left|\hat{\rho}(\mathbf{k})\right|$ and the complex phase $\hat{\rho}(\mathbf{k})$
-* `FFT_heatmap_<filename>.csv` A .csv file with $2\mathrm{interval}+1$ rows and columns where each entry corresponds to the amplitude $\left|\hat{\rho}(\mathbf{k}_{ij})\right|$ of the $ij$ entry of the discrete fourier transform
 * `wavevectors_base_<file>.csv` and `wavevectors_other_<file>.csv` A .csv file with one row for each element of $\mathcal{M}^{\mathrm{s}}$ and four columns corresponding to:
 	1. The horizontal component $k_x$
 	2. The vertical component $k_y$
@@ -65,6 +64,5 @@ In the following, `<filename>` corresponds to the name of the investigated image
 * `diffraction_threshold_<filename>.png`, `diffraction_threshold_<filename>amplitudes.png`: Coeficcients of the discrete Fourier transform that lie within the region specified by `interval` and whose amplitudes lie above `threshold`. The former represents the complex phase by color-coding, the latter does not.
 * `fourier_module_<filename>.png`: The set $\mathcal{M}^{\mathrm{s}}$ of studied frequencies.
 * `overlay_considered_vectors_diffraction_<filename>.png`: The set $\mathcal{M}^{\mathrm{s}}$ of studied frequencies overlayed with the coefficients of the diffraction diagram plotted in `diffraction_threshold_<filename>.png`.
-* `FFT_heatmap_<filename>.png` data contained in `FFT_heatmap_<filename>.csv`
 * `(amplitudeerrors|gaugeerrors|combinederrors)_<filename>_<symmetryname>.png` values of one of the three deviation measures on $\mathcal{M}^{\mathrm{s}}$
 * `(amplitudeerrors|gaugeerrors|combinederrors)_<filename>_<symmetryname>.png` histogram of the values of one of the three deviation measures

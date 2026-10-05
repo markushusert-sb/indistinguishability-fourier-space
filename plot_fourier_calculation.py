@@ -500,30 +500,26 @@ def main():
     maxsize=max(diffractiondata[:,2])
     plot_diffraction_image([[diffractiondata,{'facecolors':'none','edgecolors':plt.cm.hsv(norm_phase(diffractiondata[:,3])),'linewidths':0.2}]],args,"diffraction_threshold",maxsize,title=r'FFT-Values $\hat{\rho}^{c}$ with amplitudes above c='+str(args.threshold),legendtitle=r'\hat{\rho}',do_legend=("diffractionfft" not in args.nolegend),do_yticks=("diffractionfft" not in args.noyticks),legendfacecolor='none')
 
-    wavevecbase=np.genfromtxt(f"fourier_coefficients_base_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
-    number_bases=wavevecbase.shape[0]
-    wavevecother=np.genfromtxt(f"fourier_coefficients_other_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
+    if os.path.isfile(f"fourier_coefficients_base_{args.file.replace('.png','')}.csv"):
+        wavevecbase=np.genfromtxt(f"fourier_coefficients_base_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
+        number_bases=wavevecbase.shape[0]
+        wavevecother=np.genfromtxt(f"fourier_coefficients_other_{args.file.replace('.png','')}.csv",delimiter=',')[:,0:2]
 
-    plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata)
-    plot_fourier_at_idces(args,"wavevectors",maxsize)
+        plot_peaks_and_fft(args,wavevecbase,wavevecother,diffractiondata)
+        plot_fourier_at_idces(args,"wavevectors",maxsize)
 
-    #threshholded diffractiondata
-    oldplot=args.plottype
-    args.plottype='cartesian'
-    args.plottype=oldplot
+        #threshholded diffractiondata
+        oldplot=args.plottype
+        args.plottype='cartesian'
+        args.plottype=oldplot
 
-    #gauges and associated errors
-    gaugeerrorfiles=glob.glob('gaugeerrors*.csv')
-    for ge_file in gaugeerrorfiles:
-        log.info(f'analysing {ge_file}')
-        plot_gaugeerrors_histogram(args,ge_file)
-        plot_gaugeerrors(ge_file,args,maxsize,number_bases,diffractiondata)#pass diffractiondata here if you want to overlay gaugeerrors and fft
-
-
+        #gauges and associated errors
+        gaugeerrorfiles=glob.glob('gaugeerrors*.csv')
+        for ge_file in gaugeerrorfiles:
+            log.info(f'analysing {ge_file}')
+            plot_gaugeerrors_histogram(args,ge_file)
+            plot_gaugeerrors(ge_file,args,maxsize,number_bases,diffractiondata)#pass diffractiondata here if you want to overlay gaugeerrors and fft
 
 
-    #fft heatmap
-    fft_heatmap=np.genfromtxt(f"FFT_heatmap_{args.file.replace('.png','')}.csv",delimiter=',')
-    plot_fft_heatmap(args,fft_heatmap)
 if __name__=="__main__":
     main()
