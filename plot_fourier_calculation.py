@@ -11,8 +11,6 @@ from itertools import combinations
 import numpy as np
 import subprocess
 import matplotlib
-# Use the pgf backend (must be set before pyplot imported)
-matplotlib.use('pgf')
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.colors import LinearSegmentedColormap
